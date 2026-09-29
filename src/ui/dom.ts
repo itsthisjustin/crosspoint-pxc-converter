@@ -53,7 +53,6 @@ export function createDom() {
     previewCanvas: requiredElement<HTMLCanvasElement>('previewCanvas'),
     workCanvas: requiredElement<HTMLCanvasElement>('workCanvas'),
     downloadGroup: requiredElement<HTMLDivElement>('downloadGroup'),
-    downloadPxcBtn: requiredElement<HTMLButtonElement>('downloadPxc'),
     downloadBmpBtn: requiredElement<HTMLButtonElement>('downloadBmp'),
     zoomSlider: requiredElement<HTMLInputElement>('zoomSlider'),
     zoomHint: requiredElement<HTMLParagraphElement>('zoomHint'),

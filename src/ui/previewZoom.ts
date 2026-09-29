@@ -16,7 +16,7 @@ export function setupPreviewZoom(deps: PreviewZoomDeps): void {
   deps.zoomLabel.textContent = `${(ZOOM_BOX_SIZE / ZOOM_SOURCE_SIZE).toFixed(1)}× zoom`;
 
   deps.previewCanvas.addEventListener('mouseenter', () => {
-    if (deps.store.getState().output.pxcReady) deps.zoomBox.style.display = 'block';
+    if (deps.store.getState().output.bmpReady) deps.zoomBox.style.display = 'block';
   });
 
   deps.previewCanvas.addEventListener('mouseleave', () => {
@@ -24,7 +24,7 @@ export function setupPreviewZoom(deps: PreviewZoomDeps): void {
   });
 
   deps.previewCanvas.addEventListener('mousemove', event => {
-    if (!deps.store.getState().output.pxcReady) return;
+    if (!deps.store.getState().output.bmpReady) return;
 
     const { targetW: width, targetH: height } = deps.store.getState().device;
     const rect = deps.previewCanvas.getBoundingClientRect();

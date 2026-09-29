@@ -1,4 +1,3 @@
-import { readFileAsText } from '../infra/browser/imageLoader';
 import type { LoadedType } from './state';
 import type { GbController } from '../features/gb/controller';
 import type { ImageController } from '../features/image/controller';
@@ -32,7 +31,8 @@ export function createLoaderRouter(deps: LoaderRouterDeps) {
 
       switch (extension) {
         case 'txt':
-          await loadPrinterText(await readFileAsText(file), file.name.replace(/\.[^.]+$/, ''));
+          unloadOpposite('gb');
+          await deps.gbController.loadPrinterFile(file);
           return;
         case '2bpp':
         case 'bin':

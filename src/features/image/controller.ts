@@ -137,8 +137,9 @@ export function createImageController(deps: ImageControllerDeps): ImageControlle
     // A device switch landed while this job was in flight: the buffer is sized for the old
     // device. Drop the paint, but release the single-flight gate so the re-convert that the
     // device change already queued (via processRequested) can run.
-    if (result.indexedPixels.byteLength !== state.device.totalPixels) {
+    if (processRequested || result.indexedPixels.byteLength !== state.device.totalPixels) {
       processing = false;
+      inFlightProcessSession = null;
       if (processRequested) scheduleNextConvert();
       return;
     }
@@ -146,17 +147,20 @@ export function createImageController(deps: ImageControllerDeps): ImageControlle
     deps.runtime.lastIndexedPixels = new Uint8Array(result.indexedPixels);
     deps.runtime.lastHistogram = new Float32Array(result.histogram);
 
+    deps.host.clearStatus();
     renderIndexedPreview(deps.elements.previewCanvas, deps.runtime.lastIndexedPixels, state.device.targetW, state.device.targetH);
     renderHistogram(deps.elements.histogramCanvas, deps.runtime.lastHistogram, state.device.totalPixels, getActiveQuantThresholds(state.quantPreset, state.image.ditherEnabled));
     deps.store.dispatch(actions.outputSetReady(true, true));
 
     processing = false;
+    inFlightProcessSession = null;
     if (processRequested) scheduleNextConvert();
   });
 
   // Worker-side errors must reset the single-flight gate; otherwise `processing` stays true and
   // every subsequent slider tweak only sets `processRequested`, locking the convert pipeline.
   deps.worker.onError((error) => {
+    if (getState().loadedType !== 'image') return;
     // Stale failures are irrelevant; ignore them. The two phases use different version namespaces:
     // 'process' errors carry processVersion, 'set-base-raster' errors carry sharedBufferVersion.
     // -1 is the worker-crash catch-all and is always accepted.
@@ -169,11 +173,17 @@ export function createImageController(deps: ImageControllerDeps): ImageControlle
     if (inFlightProcessSession !== null && !isCurrentSession(inFlightProcessSession)) return;
     processing = false;
     inFlightProcessSession = null;
+    rasterDirty = true;
+    deps.store.dispatch(actions.outputClear());
     deps.host.showError(`Image worker failed (${error.phase}): ${error.message}`);
     if (processRequested) scheduleNextConvert();
   });
 
   function requestConvert(): void {
+    // Invalidate export immediately, including the frame before processing starts.
+    if (getState().output.bmpReady || getState().output.pxcReady) {
+      deps.store.dispatch(actions.outputClear());
+    }
     if (deps.runtime.convertTimer !== null) cancelAnimationFrame(deps.runtime.convertTimer);
     processRequested = true;
     if (processing) return;
@@ -246,7 +256,7 @@ export function createImageController(deps: ImageControllerDeps): ImageControlle
   }
 
   function unloadImage(): void {
-    const nextSessionVersion = bumpImageSession(deps.runtime);
+    bumpImageSession(deps.runtime);
     if (deps.runtime.convertTimer !== null) {
       cancelAnimationFrame(deps.runtime.convertTimer);
       deps.runtime.convertTimer = null;
@@ -509,6 +519,11 @@ export function createImageController(deps: ImageControllerDeps): ImageControlle
         pica: deps.pica,
       });
       if (gen !== deps.runtime.autoLevelsGen || !isCurrentSession(sessionVersion)) return;
+      const currentImage = getState().image;
+      // Manual tone edits made while analysis is running take precedence over its result.
+      if (currentImage.blackPoint !== state.image.blackPoint ||
+          currentImage.whitePoint !== state.image.whitePoint ||
+          currentImage.gammaValue !== state.image.gammaValue) return;
 
       const region = getImageAnalysisRegion(plan);
       const px = getContext2d(tempCanvas).getImageData(region.x, region.y, region.width, region.height).data;
@@ -525,6 +540,8 @@ export function createImageController(deps: ImageControllerDeps): ImageControlle
   }
 
   function notifyCropRegionChanged(): void {
+    // Invalidate an analysis immediately, before the debounce for the replacement starts.
+    deps.runtime.autoLevelsGen++;
     if (!getState().image.autoLevelsApplied) return;
     if (autoLevelsRefreshTimer !== null) clearTimeout(autoLevelsRefreshTimer);
     autoLevelsRefreshTimer = setTimeout(() => {
@@ -548,24 +565,35 @@ export function createImageController(deps: ImageControllerDeps): ImageControlle
     // requestConvert only sets `processRequested`, locking the pipeline until the next file load.
     try {
       if (rasterDirty || !deps.runtime.cachedBaseRaster) {
+        // Consume the dirty flag before awaiting. Edits during resizing must keep it dirty.
+        rasterDirty = false;
         const src = getActiveSource();
         const plan = currentRenderPlan(srcW(src), srcH(src));
+        // A device change or another session must not resize/repaint this job's canvas.
+        const rasterCanvas = createCanvas(state.device.targetW, state.device.targetH);
 
         await renderImageBaseRaster({
           src,
-          targetCanvas: deps.elements.workCanvas,
+          targetCanvas: rasterCanvas,
           plan,
           fitBg: state.background,
           pica: deps.pica,
         });
         if (!isCurrentSession(sessionVersion)) return;
+        if (rasterDirty) {
+          processing = false;
+          if (processRequested) scheduleNextConvert();
+          return;
+        }
 
-        const baseRaster = getContext2d(deps.elements.workCanvas).getImageData(
+        const baseRaster = getContext2d(rasterCanvas).getImageData(
           0, 0, state.device.targetW, state.device.targetH,
         ).data;
         commitBaseRaster(deps.runtime, baseRaster);
 
-        const sharedBuffer = new SharedArrayBuffer(baseRaster.byteLength);
+        const sharedBuffer = typeof SharedArrayBuffer === 'function'
+          ? new SharedArrayBuffer(baseRaster.byteLength)
+          : new ArrayBuffer(baseRaster.byteLength);
         new Uint8ClampedArray(sharedBuffer).set(baseRaster);
         const sharedBufferVersion = bumpSharedBufferVersion(deps.runtime);
         deps.worker.setBaseRaster(
@@ -574,8 +602,6 @@ export function createImageController(deps: ImageControllerDeps): ImageControlle
           state.device.targetH,
           sharedBufferVersion,
         );
-
-        rasterDirty = false;
       }
 
       inFlightProcessSession = sessionVersion;
@@ -598,6 +624,9 @@ export function createImageController(deps: ImageControllerDeps): ImageControlle
       // resetting here would clobber a newer convert's in-flight state.
       if (!isCurrentSession(sessionVersion)) return;
       processing = false;
+      inFlightProcessSession = null;
+      rasterDirty = true;
+      deps.store.dispatch(actions.outputClear());
       deps.host.showError(error instanceof Error ? error.message : 'Image processing failed.');
       if (processRequested) scheduleNextConvert();
     }

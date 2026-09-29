@@ -21,7 +21,9 @@ function getPanelSection(element: Element): HTMLElement {
 
 function setActive(buttons: HTMLButtonElement[], predicate: (button: HTMLButtonElement) => boolean): void {
   for (const button of buttons) {
-    button.classList.toggle('active', predicate(button));
+    const active = predicate(button);
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
   }
 }
 
@@ -53,7 +55,8 @@ export function renderStoreState(dom: AppDom, state: AppState): void {
   getPanelSection(dom.ditherToggle).style.display = isGbLoaded ? 'none' : '';
   getPanelSection(dom.invertToggle).style.display = isGbLoaded ? 'none' : '';
   dom.gbControls.style.display = isGbLoaded ? '' : 'none';
-  dom.downloadGroup.classList.toggle('visible', outputVisible);
+  dom.downloadGroup.classList.toggle('visible', outputVisible || (state.loadedType === 'image' && state.image.sourceDims !== null));
+  dom.downloadBmpBtn.disabled = !outputVisible;
   if (!outputVisible) dom.zoomBox.style.display = 'none';
   dom.previewCanvas.style.aspectRatio = `${state.device.targetW} / ${state.device.targetH}`;
 
@@ -67,6 +70,8 @@ export function renderStoreState(dom: AppDom, state: AppState): void {
   const positionGridUsable = state.image.mode !== 'crop';
   const fitFreeScale = state.image.mode === 'fit' && !state.image.fitLockNative;
   dom.posSection.classList.toggle('disabled', !positionGridUsable);
+  for (const button of dom.posButtons) button.disabled = !positionGridUsable;
+  for (const button of dom.bgButtons) button.disabled = !isGbLoaded && !positionGridUsable;
   dom.fitSizeRow.style.display = fitFreeScale ? '' : 'none';
   const fitSizeMaxPct = state.image.fitNoUpscale ? state.image.fitSizeMaxPct : 100;
   const effectiveFitSizePct = Math.min(state.image.fitSizePct, fitSizeMaxPct);

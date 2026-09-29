@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../src/infra/browser/imageLoader', () => ({
-  readFileAsText: vi.fn(async () => 'AA BB'),
-}));
-
 import { createLoaderRouter } from '../../src/app/loaderRouter';
 import type { LoadedType } from '../../src/app/state';
 
@@ -14,6 +10,7 @@ function createRouter(loadedType: LoadedType) {
   };
   const gbController = {
     loadBinaryFile: vi.fn(async () => {}),
+    loadPrinterFile: vi.fn(async () => {}),
     loadPrinterText: vi.fn(async () => {}),
     unloadGb: vi.fn(),
   };
@@ -37,8 +34,9 @@ describe('loaderRouter', () => {
     await router.loadFile(new File([], 'game.gb'));
     expect(gbController.loadBinaryFile).toHaveBeenCalledTimes(3);
 
-    await router.loadFile(new File([], 'log.txt'));
-    expect(gbController.loadPrinterText).toHaveBeenCalledWith('AA BB', 'log');
+    const log = new File([], 'log.txt');
+    await router.loadFile(log);
+    expect(gbController.loadPrinterFile).toHaveBeenCalledWith(log);
   });
 
   it('unloads a live image session before a GB load so its in-flight worker result is dropped', async () => {

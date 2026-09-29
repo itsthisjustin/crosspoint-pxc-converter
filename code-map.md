@@ -14,7 +14,7 @@ A browser-only converter from arbitrary images / Game Boy Printer captures (`.2b
 - `.bmp` — 4-bit indexed grayscale BMP (BMP3, 4-entry palette).
 - `.bmp` — Game Boy palette BMP (when the source is a GB capture).
 
-No backend. No framework. Plain DOM + a hand-rolled flux-style store. The dither/tone pipeline runs in a Web Worker over a SharedArrayBuffer (so COOP/COEP headers are required in production — see `public/_headers`). Pica (Lanczos) is used for high-quality downscaling on the *output* path only.
+No backend. No framework. Plain DOM + a hand-rolled flux-style store. The dither/tone pipeline runs in a Web Worker over a SharedArrayBuffer when cross-origin isolated, otherwise a transferable ArrayBuffer. Pica (Lanczos) is used for high-quality downscaling on the *output* path only. BMP is the sole public export; PXC encoders remain internal.
 
 ---
 
@@ -314,6 +314,8 @@ Four monotonically-increasing counters guard async paths.
 - **`convertTimer`** (`runtime.convertTimer`) — the rAF id of the in-flight convert schedule. `requestConvert` cancels and re-schedules.
 - **`processing` / `processRequested`** — single-flight gate around the worker. While `processing`, additional `requestConvert` calls only set `processRequested`; on result, if `processRequested`, schedule the next convert.
 
+Hardening rules: `requestConvert` immediately clears output readiness; pending results must not paint or re-enable downloads when another request is queued. Consume `rasterDirty` before awaiting resizing so later edits cannot be lost. Each resize uses its own output canvas so device/session changes cannot alter an in-flight job. Failed raster transfers mark the cache dirty for a retry. Game Boy binary and printer-file reads capture `gbRuntime.sessionVersion` before awaiting; `unloadGb` invalidates successes and failures from older sessions. Printer-file reading belongs to the GB controller, not the router. Auto-level results are discarded after a crop change or an intervening manual tone edit.
+
 ### Worker contract (`infra/worker/imageWorker*`)
 
 - **Cancellation** is implicit: bump `processVersion`, send a fresh `process` message; the result handler discards anything whose echoed `version` doesn't match. There is no explicit "abort" message — the worker always finishes the in-flight job and the host throws the result away.
@@ -473,4 +475,4 @@ When in doubt about whether to add a test: if the function would run in node wit
 | `npm run build` | `tsc --noEmit && depcruise … && vite build` → `dist/` |
 | `npx wrangler pages deploy dist --project-name=crosspoint-pxc-converter --branch=main` | Deploy `dist/` to Cloudflare Pages |
 
-Production requires `Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp` for SharedArrayBuffer; see `public/_headers`.
+`Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp` enable SharedArrayBuffer; see `public/_headers`. Without them, the worker receives a transferable ArrayBuffer. Both paths share the same processing code.

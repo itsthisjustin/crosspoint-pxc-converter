@@ -164,7 +164,7 @@ describe('appController', () => {
     // Positive control: lastIndexedPixels has correct size for default X4 device (480×800)
     downloadSpy.mockClear();
     const validController = createAppController({
-      store: createMockStore({ ...initialAppState, loadedType: 'image' }),
+      store: createMockStore({ ...initialAppState, loadedType: 'image', output: { ...initialAppState.output, pxcReady: true, bmpReady: true } }),
       workCanvas: { width: 0, height: 0 } as never,
       previewCanvas: { width: 0, height: 0 } as never,
       imageRuntime: { loadedImg: {}, lastIndexedPixels: new Uint8Array(480 * 800) } as never,
@@ -190,6 +190,22 @@ describe('appController', () => {
     });
     validController.downloadPxc();
     expect(downloadSpy).toHaveBeenCalledOnce();
+  });
+
+  it('blocks a correctly-sized but outdated image while a new conversion is pending', () => {
+    vi.mocked(triggerDownload).mockClear();
+    const controller = createAppController({
+      store: createMockStore({ ...initialAppState, loadedType: 'image' }),
+      imageRuntime: { lastIndexedPixels: new Uint8Array(480 * 800) } as never,
+      gbRuntime: {} as never,
+      output: { pxcBytes: null, bmpBytes: null },
+      imageController: {} as never,
+      gbController: {} as never,
+      workCanvas: {} as never,
+      previewCanvas: {} as never,
+    });
+    controller.downloadBmp();
+    expect(triggerDownload).not.toHaveBeenCalled();
   });
 
   it('guards downloads until both output byte buffers exist (gb path)', () => {

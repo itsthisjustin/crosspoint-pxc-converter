@@ -13,10 +13,10 @@ export type HistogramZone = {
 };
 
 const ZONE_STYLES: Pick<HistogramZone, 'fill' | 'pctColor' | 'palette'>[] = [
-  { fill: 'rgba(0,0,0,0.5)', pctColor: 'rgba(90,90,100,0.9)', palette: 'rgb(0,0,0)' },
-  { fill: 'rgba(85,85,85,0.28)', pctColor: 'rgba(140,140,152,0.9)', palette: 'rgb(85,85,85)' },
-  { fill: 'rgba(170,170,170,0.18)', pctColor: 'rgba(185,185,195,0.9)', palette: 'rgb(170,170,170)' },
-  { fill: 'rgba(232,232,234,0.12)', pctColor: 'rgba(255,255,255,1)', palette: 'rgb(255,255,255)' },
+  { fill: '#f0f5f3', pctColor: '#292524', palette: 'rgb(0,0,0)' },
+  { fill: '#f5f5f4', pctColor: '#292524', palette: 'rgb(85,85,85)' },
+  { fill: '#fafaf9', pctColor: '#292524', palette: 'rgb(170,170,170)' },
+  { fill: '#ffffff', pctColor: '#292524', palette: 'rgb(255,255,255)' },
 ];
 
 export function buildHistogram(values: Float32Array): Float32Array {

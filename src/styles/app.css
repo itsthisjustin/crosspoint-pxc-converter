@@ -235,6 +235,7 @@ h1 {
 
 /* Left column */
 .left {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -415,6 +416,7 @@ h1 {
 }
 
 .source-frame {
+  max-width: 100%;
   position: relative;
   overflow: auto;
   border: 1px solid var(--border);
@@ -561,6 +563,7 @@ h1 {
 
 /* Side panels */
 .side-panel {
+  min-width: 0;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -1268,6 +1271,17 @@ footer code {
 .download-btn:hover {
   background: var(--brand-600);
   opacity: 1;
+}
+
+.download-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.toggle input:focus-visible + .toggle-track,
+.drop-zone:focus-within {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 3px;
 }
 
 .download-btn[hidden] {

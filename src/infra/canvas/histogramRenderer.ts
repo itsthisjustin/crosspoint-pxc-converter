@@ -14,7 +14,7 @@ export function resizeHistogramCanvas(canvas: HTMLCanvasElement): void {
 
   const dpr = window.devicePixelRatio || 1;
   const nextWidth = Math.round(width * dpr);
-  const nextHeight = Math.round(80 * dpr);
+  const nextHeight = Math.round((canvas.offsetHeight || 96) * dpr);
   if (canvas.width === nextWidth && canvas.height === nextHeight) return;
 
   canvas.width = nextWidth;
@@ -70,8 +70,7 @@ export function renderHistogram(
     for (let b = 0; b < binned.length; b++) {
       if (!binned[b]) continue;
       const currentBarH = (binned[b] / binnedMax) * barH;
-      const gray = Math.round(50 + (b * binWidth + binWidth / 2) / 255 * 160);
-      context.fillStyle = `rgb(${gray},${gray},${gray})`;
+      context.fillStyle = '#4a7a62';
       context.fillRect(b * barWidth, barH - currentBarH, Math.max(1, barWidth - 0.5), currentBarH);
     }
   }
@@ -83,7 +82,7 @@ export function renderHistogram(
     context.fillRect(x1, barH, x2 - x1, stripH);
   }
 
-  context.strokeStyle = 'rgba(232,232,234,0.25)';
+  context.strokeStyle = '#d6d3d1';
   context.lineWidth = 1;
   for (const threshold of thresholds) {
     const x = (threshold / 255) * cw;
@@ -96,7 +95,9 @@ export function renderHistogram(
   context.font = `${Math.round(9 * dpr)}px monospace`;
   context.textBaseline = 'top';
   context.textAlign = 'left';
-  context.fillStyle = 'rgba(185,185,195,0.9)';
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, Math.min(cw, 110 * dpr), 13 * dpr);
+  context.fillStyle = '#292524';
   context.fillText(`peak bin ${Math.round(100 * binnedMax / totalPixels)} %`, 4, 4);
 
   context.font = `${Math.round(9 * dpr)}px monospace`;

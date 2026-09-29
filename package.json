@@ -13,10 +13,13 @@
   "dependencies": {
     "pica": "^9.0.1"
   },
+  "overrides": {
+    "std-env": "4.2.0"
+  },
   "devDependencies": {
     "dependency-cruiser": "^17.4.0",
     "typescript": "^5.9.3",
-    "vite": "^7.1.10",
-    "vitest": "^3.2.4"
+    "vite": "^7.3.6",
+    "vitest": "^4.1.11"
   }
 }

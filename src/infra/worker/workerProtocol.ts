@@ -13,7 +13,7 @@ export type WorkerSettings = {
 };
 
 export type WorkerInMessage =
-  | { type: 'set-base-raster'; buffer: SharedArrayBuffer; width: number; height: number; version: number }
+  | { type: 'set-base-raster'; buffer: SharedArrayBuffer | ArrayBuffer; width: number; height: number; version: number }
   | { type: 'process'; settings: WorkerSettings; version: number };
 
 export type WorkerOutMessage =

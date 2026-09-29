@@ -189,7 +189,6 @@ bindGbScaleControls({
 
 bindDownloadButtons({
   dom,
-  onDownloadPxc: appController.downloadPxc,
   onDownloadBmp: appController.downloadBmp,
 });
 

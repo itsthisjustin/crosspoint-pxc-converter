@@ -132,13 +132,13 @@
           </div>
           <div class="tone-row" id="fitSizeRow" style="display: none; margin-top: 10px;">
             <span class="tone-label">Size<button class="help-tip" type="button" data-tip="Scale the cropped region between native size (10%) and full Fit (100%). Lower values produce a smaller image with more letterbox around it." aria-label="About fit size">?</button></span>
-            <input type="range" id="fitSizeSlider" class="tone-slider" min="10" max="100" value="100" step="1">
+            <input type="range" id="fitSizeSlider" class="tone-slider" min="10" max="100" value="100" step="1" aria-label="Image size">
             <span class="tone-val" id="fitSizeVal">100%</span>
           </div>
           <div class="toggle-row" id="fitNoUpscaleRow" style="display: none;">
             <span class="toggle-label">No upscale<button class="help-tip" type="button" data-tip="When on, Fit caps the scaling at 1× — small sources stay at native pixel size rather than being resampled bigger. Turn off to allow upscaling small sources to fill the device." aria-label="About no-upscale guard">?</button></span>
             <label class="toggle">
-              <input type="checkbox" id="fitNoUpscaleToggle" checked>
+              <input type="checkbox" id="fitNoUpscaleToggle" checked aria-label="Prevent image upscaling">
               <span class="toggle-track"></span>
             </label>
           </div>
@@ -214,7 +214,7 @@
             <div class="toggle-row">
               <span class="toggle-label">Invert<button class="help-tip" type="button" data-tip="Flip colors." aria-label="About GB invert">?</button></span>
               <label class="toggle">
-                <input type="checkbox" id="gbInvertToggle">
+                <input type="checkbox" id="gbInvertToggle" aria-label="Invert Game Boy colors">
                 <span class="toggle-track"></span>
               </label>
             </div>
@@ -241,17 +241,17 @@
           <p class="panel-heading">Tone Range<button class="help-tip" type="button" data-tip="Maps source brightness onto the device's 4 grey levels. Adjust black, white, and gamma to control how the picture is exposed." aria-label="About tone range">?</button></p>
           <div class="tone-row">
             <span class="tone-label">Black<button class="help-tip" type="button" data-tip="Pixels at or below this brightness become pure black on the device." aria-label="About black point">?</button></span>
-            <input type="range" id="blackSlider" class="tone-slider" min="0" max="255" value="0" step="1">
+            <input type="range" id="blackSlider" class="tone-slider" min="0" max="255" value="0" step="1" aria-label="Black point">
             <span class="tone-val" id="blackVal">0</span>
           </div>
           <div class="tone-row">
             <span class="tone-label">White<button class="help-tip" type="button" data-tip="Pixels at or above this brightness become pure white on the device." aria-label="About white point">?</button></span>
-            <input type="range" id="whiteSlider" class="tone-slider" min="0" max="255" value="255" step="1">
+            <input type="range" id="whiteSlider" class="tone-slider" min="0" max="255" value="255" step="1" aria-label="White point">
             <span class="tone-val" id="whiteVal">255</span>
           </div>
           <div class="tone-row">
             <span class="tone-label">Gamma<button class="help-tip" type="button" data-tip="Lifts or darkens midtones without clipping pure black or pure white. Below 1 darkens, above 1 brightens." aria-label="About gamma">?</button></span>
-            <input type="range" id="gammaSlider" class="tone-slider" min="30" max="500" value="100" step="1">
+            <input type="range" id="gammaSlider" class="tone-slider" min="30" max="500" value="100" step="1" aria-label="Gamma">
             <span class="tone-val" id="gammaVal">1.00</span>
           </div>
           <div class="tone-btns">
@@ -263,7 +263,7 @@
         <div class="panel-section">
           <p class="panel-heading">Contrast<button class="help-tip" type="button" data-tip="Pull dark and light pixels apart (positive) or push them together (negative)." aria-label="About contrast">?</button></p>
           <div class="contrast-row">
-            <input type="range" id="contrastSlider" class="contrast-slider" min="-100" max="100" value="0" step="1">
+            <input type="range" id="contrastSlider" class="contrast-slider" min="-100" max="100" value="0" step="1" aria-label="Contrast">
             <span class="contrast-val" id="contrastVal">0</span>
           </div>
           <button class="contrast-reset" id="contrastReset">Reset</button>
@@ -273,7 +273,7 @@
           <div class="toggle-row">
             <span class="toggle-label">Invert<button class="help-tip" type="button" data-tip="Flip colors." aria-label="About invert">?</button></span>
             <label class="toggle">
-              <input type="checkbox" id="invertToggle">
+              <input type="checkbox" id="invertToggle" aria-label="Invert image colors">
               <span class="toggle-track"></span>
             </label>
           </div>
@@ -283,7 +283,7 @@
           <div class="toggle-row" style="margin-bottom: 10px;">
             <span class="toggle-label">Dither<button class="help-tip" type="button" data-tip="Simulates extra grey levels by mixing the device's 4 shades with patterned noise. Each algorithm has a different look — try a few to see which fits your image." aria-label="About dither">?</button></span>
             <label class="toggle">
-              <input type="checkbox" id="ditherToggle" checked>
+              <input type="checkbox" id="ditherToggle" checked aria-label="Dithering">
               <span class="toggle-track"></span>
             </label>
           </div>
@@ -312,7 +312,6 @@
     </div>
 
     <div class="download-group" id="downloadGroup">
-      <button class="download-btn" id="downloadPxc" hidden aria-hidden="true" tabindex="-1">Download .pxc</button>
       <button class="download-btn" id="downloadBmp">Download native-palette BMP</button>
     </div>
 

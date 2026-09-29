@@ -176,6 +176,7 @@ export function createAppController(deps: AppControllerDeps): AppController {
     const deviceSuffix = `-${state.device.key.toUpperCase()}`;
     const filename = `${state.output.baseName}${ditherSuffix}${deviceSuffix}.${ext}`;
     if (state.loadedType === 'image') {
+      if (ext === 'bmp' ? !state.output.bmpReady : !state.output.pxcReady) return;
       const px = deps.imageRuntime.lastIndexedPixels;
       if (!px) return;
       // Stale buffer from before a device switch — the re-convert hasn't landed yet; encoding

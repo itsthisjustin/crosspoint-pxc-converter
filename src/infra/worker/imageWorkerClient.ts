@@ -4,7 +4,7 @@ export type WorkerErrorEvent = Extract<WorkerOutMessage, { type: 'error' }>;
 export type WorkerResultEvent = Extract<WorkerOutMessage, { type: 'result' }>;
 
 export type ImageWorkerClient = {
-  setBaseRaster(buffer: SharedArrayBuffer, width: number, height: number, version: number): void;
+  setBaseRaster(buffer: SharedArrayBuffer | ArrayBuffer, width: number, height: number, version: number): void;
   process(settings: WorkerSettings, version: number): void;
   onResult(callback: (result: WorkerResultEvent) => void): void;
   onError(callback: (error: WorkerErrorEvent) => void): void;
@@ -45,7 +45,9 @@ export function createImageWorkerClient(): ImageWorkerClient {
 
   return {
     setBaseRaster(buffer, width, height, version) {
-      worker.postMessage({ type: 'set-base-raster', buffer, width, height, version });
+      // Normal buffers can be transferred when the host page isn't cross-origin isolated.
+      worker.postMessage({ type: 'set-base-raster', buffer, width, height, version },
+        buffer instanceof ArrayBuffer ? [buffer] : []);
     },
     process(settings, version) {
       worker.postMessage({ type: 'process', settings, version });

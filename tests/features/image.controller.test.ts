@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { actions } from '../../src/app/actions';
 import { reducer } from '../../src/app/reducer';
@@ -664,5 +664,148 @@ describe('image controller', () => {
 
     vi.unstubAllGlobals();
     renderImageBaseRasterMock.mockReset();
+  });
+});
+
+describe('image conversion races', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    renderImageBaseRasterMock.mockReset();
+    renderImageBaseRasterMock.mockResolvedValue();
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  function setup() {
+    const MockImage = stubHtmlImageElement();
+    const callbacks = new Map<number, FrameRequestCallback>();
+    let nextId = 0;
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callbacks.set(++nextId, callback);
+      return nextId;
+    });
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => callbacks.delete(id));
+    const store = createMockStore({
+      ...initialAppState,
+      loadedType: 'image',
+      output: { ...initialAppState.output, pxcReady: true, bmpReady: true },
+    });
+    const runtime = createImageRuntime();
+    runtime.loadedImg = new MockImage() as unknown as HTMLImageElement;
+    runtime.lastIndexedPixels = new Uint8Array(480 * 800);
+    const worker = createMockWorker();
+    const elements = createMockElements();
+    const showError = vi.fn();
+    const controller = createImageController({
+      store, runtime, worker, elements, output: createOutputRuntime(),
+      pica: { resize: vi.fn() },
+      host: { clearStatus: vi.fn(), showError, clearHistogramView: vi.fn(), resetSession: vi.fn() },
+      clearSnap: vi.fn(),
+    });
+    const frame = async () => {
+      const entry = callbacks.entries().next().value;
+      expect(entry).toBeDefined();
+      const [id, callback] = entry!;
+      callbacks.delete(id);
+      callback(0);
+      await Promise.resolve();
+      await Promise.resolve();
+    };
+    const result = () => worker.emitResult({
+      type: 'result', version: runtime.processVersion,
+      indexedPixels: new Uint8Array(store.getState().device.totalPixels).buffer,
+      histogram: new Float32Array(256).buffer,
+    });
+    return { store, runtime, controller, elements, worker, frame, result, showError };
+  }
+
+  it('preserves a crop invalidation made during asynchronous resizing', async () => {
+    const { controller, worker, frame, elements } = setup();
+    const resizing = createDeferred<void>();
+    renderImageBaseRasterMock.mockImplementationOnce(() => resizing.promise);
+    controller.requestConvert();
+    await frame();
+    controller.invalidateBaseRaster();
+    controller.requestConvert();
+    resizing.resolve();
+    await Promise.resolve();
+    expect(worker.process).not.toHaveBeenCalled();
+    await frame();
+    expect(renderImageBaseRasterMock).toHaveBeenCalledTimes(2);
+    expect(worker.setBaseRaster).toHaveBeenCalledOnce();
+    expect(worker.process).toHaveBeenCalledOnce();
+    const first = renderImageBaseRasterMock.mock.calls[0][0] as { targetCanvas: HTMLCanvasElement };
+    expect(first.targetCanvas).not.toBe(elements.workCanvas);
+  });
+
+  it('suppresses an obsolete worker result and disables export until the latest result', async () => {
+    const { controller, store, worker, frame, result } = setup();
+    controller.requestConvert();
+    expect(store.getState().output.bmpReady).toBe(false);
+    await frame();
+    store.dispatch(actions.imageSetGamma(1.5));
+    controller.requestConvert();
+    result();
+    expect(renderIndexedPreviewMock).not.toHaveBeenCalled();
+    expect(store.getState().output.bmpReady).toBe(false);
+    await frame();
+    expect(worker.process).toHaveBeenLastCalledWith(expect.objectContaining({ gammaValue: 1.5 }), expect.any(Number));
+    expect(renderImageBaseRasterMock).toHaveBeenCalledOnce();
+    result();
+    expect(renderIndexedPreviewMock).toHaveBeenCalledOnce();
+    expect(store.getState().output.bmpReady).toBe(true);
+  });
+
+  it('converts without SharedArrayBuffer on a host without isolation headers', async () => {
+    const { controller, worker, frame, result, store } = setup();
+    vi.stubGlobal('SharedArrayBuffer', undefined);
+    controller.requestConvert();
+    await frame();
+    expect(worker.setBaseRaster.mock.calls[0][0]).toBeInstanceOf(ArrayBuffer);
+    result();
+    expect(store.getState().output.bmpReady).toBe(true);
+  });
+
+  it('does not clear GB output when the inactive image worker reports an error', () => {
+    const { store, worker, showError } = setup();
+    store.dispatch(actions.setLoadedType('gb'));
+    worker.emitError({ type: 'error', phase: 'process', version: -1, message: 'late worker crash' });
+    expect(store.getState().output.bmpReady).toBe(true);
+    expect(showError).not.toHaveBeenCalled();
+  });
+
+  it('rebuilds the raster after a failed transfer instead of reusing an unsent cache', async () => {
+    const { controller, worker, frame, showError, store } = setup();
+    worker.setBaseRaster.mockImplementationOnce(() => { throw new Error('transfer failed'); });
+    controller.requestConvert();
+    await frame();
+    expect(showError).toHaveBeenCalledWith('transfer failed');
+    expect(store.getState().output.bmpReady).toBe(false);
+    controller.requestConvert();
+    await frame();
+    expect(renderImageBaseRasterMock).toHaveBeenCalledTimes(2);
+    expect(worker.process).toHaveBeenCalledOnce();
+  });
+
+  it('preserves manual tone edits made while auto levels is running', async () => {
+    const { controller, store } = setup();
+    const resizing = createDeferred<void>();
+    renderImageBaseRasterMock.mockImplementationOnce(() => resizing.promise);
+    const analysis = controller.autoLevels();
+    store.dispatch(actions.imageSetGamma(1.8));
+    resizing.resolve();
+    await analysis;
+    expect(store.getState().image.gammaValue).toBe(1.8);
+    expect(store.getState().image.autoLevelsApplied).toBe(false);
+  });
+
+  it('drops an auto-level result as soon as the crop changes', async () => {
+    const { controller, store } = setup();
+    const resizing = createDeferred<void>();
+    renderImageBaseRasterMock.mockImplementationOnce(() => resizing.promise);
+    const analysis = controller.autoLevels();
+    controller.notifyCropRegionChanged();
+    resizing.resolve();
+    await analysis;
+    expect(store.getState().image.autoLevelsApplied).toBe(false);
   });
 });

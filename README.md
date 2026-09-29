@@ -163,7 +163,7 @@ The GB-Printer text-log parser reads hex byte lines and extracts the `PRNT` pale
 ### Export
 
 - **Download native-palette BMP** — 4-bit indexed BMP3 (greyscale palette in image mode, GB colour palette in GB mode). This is the only user-facing export for now.
-- The CrossPoint-native PXC encoder remains in the codebase but its download control is hidden.
+- The CrossPoint-native PXC encoder remains internal; there is no PXC download control or event binding in the UI.
 
 Filenames are tagged with the dither method (image mode) and target device, so multiple variants of the same source don't collide:
 
@@ -190,16 +190,18 @@ npm run test     # vitest run
 
 The build output in `dist/` is plain static files — HTML, JS chunks, CSS, and a worker bundle.
 
+The `std-env` dependency is pinned to compatible version 4.2.0 because the registry advertised 4.3.0 but its archive returned HTTP 404 during the September 2026 hardening update. Remove the override once the archive is available and the clean install, tests, and build pass.
+
 The production build uses relative asset URLs, so `dist/` can be mounted directly under a CrossPoint Reader tools route (for example `/tools/wallpaper/`) without recompiling for that pathname. The page uses the same Inter/Lora typography, brand-green and stone palette, controls, cards, and site navigation treatment as [crosspointreader.com](https://crosspointreader.com/).
 
 ### Hosting requirements
 
-The dither pipeline runs in a Web Worker over a `SharedArrayBuffer`. Browsers allow that only inside a cross-origin-isolated context, so production hosting must serve the app with these response headers:
+The dither pipeline runs in a Web Worker. It uses `SharedArrayBuffer` when available and automatically falls back to a transferable `ArrayBuffer` on ordinary hosts. These headers enable the shared-memory path:
 
 - `Cross-Origin-Opener-Policy: same-origin`
 - `Cross-Origin-Embedder-Policy: require-corp`
 
-`public/_headers` ships the correct values for hosts that read that file format. On other hosts, configure the equivalent response-header rules in the host's own configuration.
+`public/_headers` ships the correct values for hosts that read that file format. On other hosts, configure equivalent response-header rules if you want shared memory; conversion also works without them. Serve the build over HTTP(S), rather than opening `index.html` as a local file, so browser modules and workers can load.
 
 ---
 
@@ -217,7 +219,7 @@ domain  ←  infra  ←  app  ←  features  ←  ui
 - **`src/features/{image,gb}/`** — feature controllers and helpers wired through deps; image and GB never import each other.
 - **`src/ui/`** — DOM lookup, store-driven render, event bindings, crop interaction, preview loupe.
 
-The dither / tone pipeline runs in a Web Worker over a `SharedArrayBuffer` (see [Hosting requirements](#hosting-requirements)). Three monotonic version counters (`processVersion`, `sharedBufferVersion`, `autoLevelsGen`) gate async results so a stale dither pass can't overwrite a fresh one.
+The dither / tone pipeline runs in a Web Worker with shared or transferable buffers (see [Hosting requirements](#hosting-requirements)). Session and processing counters reject obsolete file loads and conversions. Changes made during resizing remain pending until processed, and downloads stay disabled until the latest output is ready.
 
 `code-map.md` carries the full architectural contract: layer rules, the single-source-of-truth registry that prevents parallel implementations, fluidity hot paths that must stay sub-frame, and runtime-object documentation. Read it before non-trivial changes.
 

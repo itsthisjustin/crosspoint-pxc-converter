@@ -14,6 +14,7 @@ import { buildGbFileInfo, buildGbOutputArtifacts, buildGbSourceView } from './se
 
 export type GbController = {
   loadBinaryFile(file: File): Promise<void>;
+  loadPrinterFile(file: File): Promise<void>;
   loadPrinterText(text: string, outputBaseName?: string): Promise<void>;
   unloadGb(): void;
   unloadActive(): void;
@@ -56,6 +57,7 @@ export function createGbController(deps: GbControllerDeps): GbController {
   }
 
   function unloadGb(): void {
+    deps.runtime.sessionVersion++;
     deps.elements.gbCanvas.width = 1;
     deps.elements.gbCanvas.height = 1;
     deps.runtime.rawBytes = null;
@@ -136,27 +138,34 @@ export function createGbController(deps: GbControllerDeps): GbController {
   async function loadBinaryFile(file: File): Promise<void> {
     deps.host.clearStatus();
     unloadGb();
+    const sessionVersion = deps.runtime.sessionVersion;
     try {
       const baseName = file.name.replace(/\.[^.]+$/, '');
       deps.store.dispatch(actions.outputSetBaseName(baseName));
       deps.store.dispatch(actions.setLoadedType('gb'));
-      deps.runtime.rawBytes = new Uint8Array(await readFileAsArrayBuffer(file));
+      const bytes = new Uint8Array(await readFileAsArrayBuffer(file));
+      if (sessionVersion !== deps.runtime.sessionVersion) return;
+      deps.runtime.rawBytes = bytes;
       deps.validateGbBytes(deps.runtime.rawBytes, 'Game Boy binary');
       deps.runtime.paletteRemap = null;
       dispatchFileInfo(baseName);
       initGb();
     } catch (error) {
+      if (sessionVersion !== deps.runtime.sessionVersion) return;
       unloadGb();
       deps.host.showError(error instanceof Error ? error.message : 'Failed to load the selected GB input.');
     }
   }
 
-  async function loadPrinterText(text: string, outputBaseName = 'pasted-printer-log'): Promise<void> {
+  async function loadPrinterSource(readText: () => Promise<string>, outputBaseName: string): Promise<void> {
     deps.host.clearStatus();
     unloadGb();
+    const sessionVersion = deps.runtime.sessionVersion;
     try {
       deps.store.dispatch(actions.outputSetBaseName(outputBaseName));
       deps.store.dispatch(actions.setLoadedType('gb'));
+      const text = await readText();
+      if (sessionVersion !== deps.runtime.sessionVersion) return;
       const parsed = parsePrinterTxt(text);
       deps.validateGbBytes(parsed.bytes, outputBaseName === 'pasted-printer-log' ? 'Pasted GB Printer text' : 'GB Printer text log');
       deps.runtime.rawBytes = parsed.bytes;
@@ -164,9 +173,18 @@ export function createGbController(deps: GbControllerDeps): GbController {
       dispatchFileInfo(outputBaseName);
       initGb();
     } catch (error) {
+      if (sessionVersion !== deps.runtime.sessionVersion) return;
       unloadGb();
       deps.host.showError(error instanceof Error ? error.message : 'Failed to parse GB Printer text.');
     }
+  }
+
+  function loadPrinterText(text: string, outputBaseName = 'pasted-printer-log'): Promise<void> {
+    return loadPrinterSource(async () => text, outputBaseName);
+  }
+
+  function loadPrinterFile(file: File): Promise<void> {
+    return loadPrinterSource(() => readFileAsText(file), file.name.replace(/\.[^.]+$/, ''));
   }
 
   function refreshVisuals(): void {
@@ -204,6 +222,7 @@ export function createGbController(deps: GbControllerDeps): GbController {
 
   return {
     loadBinaryFile,
+    loadPrinterFile,
     loadPrinterText,
     unloadGb,
     unloadActive: unloadGb,
