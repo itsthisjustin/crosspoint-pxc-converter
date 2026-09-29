@@ -10,7 +10,7 @@ import { encodeGrayBmp } from '../domain/formats/bmpGray';
 import { DITHER_FILENAME_SUFFIX } from '../domain/dither';
 
 import type { DeviceKey } from '../domain/devices';
-import type { GbPaletteKey } from '../domain/formats/bmpGb';
+import type { GbPaletteKey } from '../domain/gb/palettes';
 import type { GbController } from '../features/gb/controller';
 import type { ImageController } from '../features/image/controller';
 

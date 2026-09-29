@@ -1,7 +1,7 @@
 import { DEFAULT_XT, DEVICES, type DeviceKey } from '../domain/devices';
 import type { DitherMode } from '../domain/dither';
 import type { FitAlign } from '../domain/geometry';
-import type { GbPaletteKey } from '../domain/formats/bmpGb';
+import type { GbPaletteKey } from '../domain/gb/palettes';
 import { DEFAULT_QUANT_PRESET, type QuantPreset } from '../domain/quantize';
 
 export type LoadedType = 'image' | 'gb' | null;

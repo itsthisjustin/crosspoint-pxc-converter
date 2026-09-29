@@ -3,7 +3,7 @@ import type { AppController } from '../app/appController';
 import type { AppStore } from '../app/store';
 import type { DeviceKey } from '../domain/devices';
 import type { DitherMode } from '../domain/dither';
-import type { GbPaletteKey } from '../domain/formats/bmpGb';
+import type { GbPaletteKey } from '../domain/gb/palettes';
 import { type FitAlign } from '../domain/geometry';
 import { initialImageState, type FitBackground, type ImageMode } from '../app/state';
 import type { AppDom } from './dom';

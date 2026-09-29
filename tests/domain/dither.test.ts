@@ -33,7 +33,7 @@ describe('ditherToIndexedGray', () => {
   });
 
   it('FS single pixel 128 under master profile lands at level 2', () => {
-    // ditherThresholds [30,50,140]: 128 < 140 → bin 2
+    // ditherThresholds [30,55,150]: 128 < 150 → bin 2
     const result = ditherToIndexedGray(new Float32Array([128]), 1, 1, true, 'fs', MASTER_PROFILE);
     expect(result[0]).toBe(2);
   });
@@ -65,12 +65,26 @@ describe('ditherToIndexedGray', () => {
   });
 
   it('Bayer 1×1 input 128 under master profile: expect level 3', () => {
-    // levels [15,30,80,210]: lo scan: 128 >= 80 → lo=2, hi=3
-    // frac = (128 - 80) / (210 - 80) = 48/130 ≈ 0.369
+    // levels [15,35,90,210]: lo scan: 128 >= 90 → lo=2, hi=3
+    // frac = (128 - 90) / (210 - 90) = 38/120 ≈ 0.317
     // bayer threshold at (0,0): ([...][0] + 0.5)/16 = (0+0.5)/16 ≈ 0.031
-    // frac (0.369) > t (0.031) → hi → 3
+    // frac (0.317) > t (0.031) → hi → 3
     const result = ditherToIndexedGray(new Float32Array([128]), 1, 1, true, 'bayer', MASTER_PROFILE);
     expect(result[0]).toBe(3);
+  });
+
+  it.each(['fs', 'atk', 'jjn', 'stucki', 'burkes'] as const)('%s uses corrected profile boundaries', mode => {
+    for (const [profile, boundaries] of [
+      [PR1614_PROFILE, [43, 128, 213]],
+      [MASTER_PROFILE, [30, 55, 150]],
+    ] as const) {
+      boundaries.forEach((threshold, level) => {
+        const below = ditherToIndexedGray(new Float32Array([threshold - 1]), 1, 1, true, mode, profile);
+        const at = ditherToIndexedGray(new Float32Array([threshold]), 1, 1, true, mode, profile);
+        expect(below[0]).toBe(level);
+        expect(at[0]).toBe(level + 1);
+      });
+    }
   });
 });
 

@@ -16,6 +16,10 @@ import { createGbController } from '../../src/features/gb/controller';
 import { readFileAsArrayBuffer, readFileAsText } from '../../src/infra/browser/imageLoader';
 import { createStore } from '../../src/app/store';
 import { actions } from '../../src/app/actions';
+import { renderGbSourceCanvas } from '../../src/infra/canvas/gbSourceRenderer';
+import { renderIndexedPreview } from '../../src/infra/canvas/previewRenderer';
+import { encodeGrayBmp } from '../../src/domain/formats/bmpGray';
+import { GB_PALETTES, type GbPaletteKey } from '../../src/domain/gb/palettes';
 
 function createMockStore(state = initialAppState): AppStore & { actions: unknown[] } {
   const actions: unknown[] = [];
@@ -57,6 +61,29 @@ describe('gb controller', () => {
     });
     return { controller, store, runtime, output, showError };
   }
+
+  it.each(Object.keys(GB_PALETTES) as GbPaletteKey[])(
+    'keeps %s colors in the source preview and exports native grayscale', paletteKey => {
+      const { controller, store, runtime, output } = createLoadingController();
+      store.dispatch(actions.setLoadedType('gb'));
+      store.dispatch(actions.gbSetDims({ width: 4, height: 1 }));
+      runtime.pixels = new Uint8Array([0, 1, 2, 3]);
+      controller.refreshVisuals();
+      const originalBmp = output.bmpBytes?.slice();
+
+      store.dispatch(actions.gbSetPalette(paletteKey));
+      controller.refreshVisuals();
+
+      const sourceCall = vi.mocked(renderGbSourceCanvas).mock.calls.at(-1)!;
+      expect(sourceCall[4]).toBe(paletteKey);
+      expect(output.bmpBytes).toEqual(originalBmp);
+      const [, pixels, width, height] = vi.mocked(renderIndexedPreview).mock.calls.at(-1)!;
+      expect(output.bmpBytes).toEqual(encodeGrayBmp(pixels, width, height));
+      expect(Array.from(output.bmpBytes!.slice(54, 70))).toEqual([
+        0, 0, 0, 0, 85, 85, 85, 0, 170, 170, 170, 0, 255, 255, 255, 0,
+      ]);
+    },
+  );
 
   it('keeps the newest binary when an earlier read finishes last', async () => {
     let resolveOld!: (value: ArrayBuffer) => void;

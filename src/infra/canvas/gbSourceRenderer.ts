@@ -1,5 +1,4 @@
-import type { GbPaletteKey } from '../../domain/formats/bmpGb';
-import { GB_PALETTES } from '../../domain/formats/bmpGb';
+import { GB_PALETTES, type GbPaletteKey } from '../../domain/gb/palettes';
 import { getContext2d } from './context';
 
 export function renderGbSourceCanvas(

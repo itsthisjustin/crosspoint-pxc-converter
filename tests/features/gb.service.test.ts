@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildGbFileInfo, buildGbOutputArtifacts, buildGbSourceView } from '../../src/features/gb/service';
+import { encodeGrayBmp } from '../../src/domain/formats/bmpGray';
 
 describe('gb feature service', () => {
   it('builds a rotated source view with auto scale', () => {
@@ -24,12 +25,29 @@ describe('gb feature service', () => {
       background: 'white',
       paletteRemap: null,
       invert: false,
-      paletteKey: 'dmg',
     });
 
     expect(Array.from(result.indexedPixels)).toEqual([3, 3, 3, 0]);
     expect(result.pxcBytes.length).toBeGreaterThan(0);
     expect(result.bmpBytes.length).toBeGreaterThan(0);
+    expect(result.bmpBytes).toEqual(encodeGrayBmp(result.indexedPixels, 2, 2));
+  });
+
+  it.each([false, true])('preserves remapped GB shades and native background with invert=%s', invert => {
+    const result = buildGbOutputArtifacts({
+      pixels: new Uint8Array([0, 1, 2, 3]),
+      width: 4, height: 1, rotation: 0, outputScale: 1, targetW: 4, targetH: 3,
+      background: 'black', paletteRemap: [3, 1, 2, 0], invert,
+    });
+    expect(Array.from(result.indexedPixels)).toEqual([
+      0, 0, 0, 0,
+      ...(invert ? [3, 1, 2, 0] : [0, 2, 1, 3]),
+      0, 0, 0, 0,
+    ]);
+    expect(result.bmpBytes).toEqual(encodeGrayBmp(result.indexedPixels, 4, 3));
+    expect(Array.from(result.bmpBytes.slice(54, 70))).toEqual([
+      0, 0, 0, 0, 85, 85, 85, 0, 170, 170, 170, 0, 255, 255, 255, 0,
+    ]);
   });
 
   it('builds GB file metadata including palette and warning text', () => {

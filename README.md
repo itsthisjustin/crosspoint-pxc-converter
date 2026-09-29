@@ -108,7 +108,7 @@ Controls run in this processing order: black/white-point map → gamma → contr
 
 ### Dithering
 
-Every error-diffusion algorithm uses BT.601 luminance in sRGB space. The default PR1614 profile uses evenly spaced firmware thresholds `42 / 127 / 212` and the native display levels `[0, 85, 170, 255]`, matching the PR1614 image-rendering work. The previous CrossPoint master calibration remains available through the advanced preset toggle (`Ctrl`/`Cmd` + `Shift` + `Q`).
+Every error-diffusion algorithm uses BT.601 luminance in sRGB space. The default PR1614 profile uses evenly spaced thresholds `43 / 128 / 213` and the native display levels `[0, 85, 170, 255]`. The alternate CrossPoint calibration remains available through the advanced preset toggle (`Ctrl`/`Cmd` + `Shift` + `Q`): dither thresholds `30 / 55 / 150`, reconstruction levels `[15, 35, 90, 210]`, and dither-off thresholds `45 / 70 / 140`, matching the legacy branch in [CrossPoint 1.6.5](https://github.com/crosspoint-reader/crosspoint-reader/blob/1.6.5/lib/GfxRenderer/BitmapHelpers.h). These profiles control browser-side shade selection; both export the same native grayscale BMP palette.
 
 | Algorithm | Notes |
 |-----------|-------|
@@ -130,7 +130,7 @@ A live tone-distribution panel renders alongside the preview:
 - 256-bin luminance histogram of the post-tone pre-dither buffer.
 - Four coloured zones corresponding to the four output levels, each labelled with the percentage of pixels that fall into it.
 - A solid palette colour strip below for unambiguous level identification.
-- Threshold markers follow the active quantization profile. The default PR1614 markers are 42, 127, and 212.
+- Threshold markers follow the active quantization profile. The default PR1614 markers are 43, 128, and 213.
 
 ### Game Boy mode
 
@@ -140,15 +140,15 @@ Game Boy binaries (`.2bpp`, `.bin`, `.gb`) and GB-Printer text logs (`.txt` file
 |---------|-------------|
 | **Output scale** | Integer pixel-perfect multiplier (1×, 2×, 3×, …) up to the maximum that still fits inside the device target. The scaled tile art centres on the canvas. |
 | **Background** | White or black fill behind the centred tile art. |
-| **BMP palette** | Colour scheme used for the `.bmp` export: DMG (green), Pocket (sepia/grey), B&W (greyscale), SGB (purple/orange). The `.pxc` export is always greyscale. |
+| **Source preview palette** | Source-only colour scheme: DMG (green), Pocket (sepia/grey), B&W (greyscale), SGB (purple/orange). The output preview and BMP export always use native greyscale, regardless of this selection. |
 | **Invert** | Flips GB colour indices (`0↔3`, `1↔2`) before conversion. |
 | **Rotation** | 90° clockwise / counter-clockwise. |
 
 The GB-Printer text-log parser reads hex byte lines and extracts the `PRNT` palette register, applying the captured grey levels automatically. The GB Printer palette readout reports the register value and the per-shade mapping in the file-info panel.
 
-**GB index → PXC level**
+**GB index → native grayscale level**
 
-| GB index | Meaning   | PXC level      |
+| GB index | Meaning   | Output level   |
 |----------|-----------|----------------|
 | 0        | Lightest  | 3 (white)      |
 | 1        | Light     | 2 (light grey) |
@@ -162,20 +162,21 @@ The GB-Printer text-log parser reads hex byte lines and extracts the `PRNT` pale
 
 ### Export
 
-- **Download native-palette BMP** — 4-bit indexed BMP3 (greyscale palette in image mode, GB colour palette in GB mode). This is the only user-facing export for now.
+- **Download native-palette BMP** — 4-bit indexed BMP3, using one shared encoder for both image and Game Boy modes. The four palette entries are exactly `[0, 85, 170, 255]`, so CrossPoint recognizes the native shades and bypasses on-device dithering. This is the only user-facing export for now.
+- On the reader, use **Sleep Screen Cover Filter → No Filter** to retain all four grayscale shades. Select the matching X3/X4 size before downloading.
 - The CrossPoint-native PXC encoder remains internal; there is no PXC download control or event binding in the UI.
 
 Filenames are tagged with the dither method (image mode) and target device, so multiple variants of the same source don't collide:
 
 ```
-{baseName}[-{ditherCode}]-{DEVICE}.{pxc|bmp}
+{baseName}[-{ditherCode}]-{DEVICE}.bmp
 ```
 
 - `baseName` — the source filename without its extension (defaults to `sleep` before any file is loaded).
 - `ditherCode` — image-mode short code: `fs`, `atk`, `jjn`, `stk`, `bks`, `bay`, `zf` (Zhou-Fang, default), `bn` (Blue Noise). Omitted when dither is off or the source is a GB capture.
 - `DEVICE` — `X3` or `X4`, matching the device pill.
 
-Examples: `earth-zf-X4.pxc`, `earth-atk-X3.bmp`, `mario-X4.pxc` (GB), `earth-X4.pxc` (image, dither off).
+Examples: `earth-zf-X4.bmp`, `earth-atk-X3.bmp`, `mario-X4.bmp` (GB), `earth-X4.bmp` (image, dither off).
 
 ---
 

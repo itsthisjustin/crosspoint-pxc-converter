@@ -1,6 +1,5 @@
 import type { FitBackground, GbFileInfo } from '../../app/state';
-import type { GbPaletteKey } from '../../domain/formats/bmpGb';
-import { encodeGbBmp } from '../../domain/formats/bmpGb';
+import { encodeGrayBmp } from '../../domain/formats/bmpGray';
 import { GB_SHADE_NAMES } from '../../domain/gb/constants';
 import { computeGbDisplayScale } from '../../domain/gb/displayScale';
 import { encodePxc } from '../../domain/formats/pxc';
@@ -50,7 +49,6 @@ export function buildGbOutputArtifacts(params: {
   background: FitBackground;
   paletteRemap: number[] | null;
   invert: boolean;
-  paletteKey: GbPaletteKey;
 }): GbOutputArtifacts {
   const rotated = rotatePixels(params.pixels, params.width, params.height, params.rotation);
   const scaledW = Math.min(rotated.w * params.outputScale, params.targetW);
@@ -74,7 +72,7 @@ export function buildGbOutputArtifacts(params: {
   return {
     indexedPixels,
     pxcBytes: encodePxc(indexedPixels, params.targetW, params.targetH),
-    bmpBytes: encodeGbBmp(indexedPixels, params.targetW, params.targetH, params.paletteKey),
+    bmpBytes: encodeGrayBmp(indexedPixels, params.targetW, params.targetH),
   };
 }
 

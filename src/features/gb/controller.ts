@@ -102,7 +102,6 @@ export function createGbController(deps: GbControllerDeps): GbController {
       background: state.background,
       paletteRemap: deps.runtime.paletteRemap,
       invert: state.gb.invert,
-      paletteKey: state.gb.paletteKey,
     });
 
     renderIndexedPreview(deps.elements.previewCanvas, outputs.indexedPixels, state.device.targetW, state.device.targetH);

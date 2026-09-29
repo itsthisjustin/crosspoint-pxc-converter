@@ -1,7 +1,7 @@
 import type { DeviceKey } from '../domain/devices';
 import type { DitherMode } from '../domain/dither';
 import type { FitAlign } from '../domain/geometry';
-import type { GbPaletteKey } from '../domain/formats/bmpGb';
+import type { GbPaletteKey } from '../domain/gb/palettes';
 import type { QuantPreset } from '../domain/quantize';
 import type { FitBackground, GbDims, GbFileInfo, ImageDims, ImageMode, LoadedType, Rotation, UiTone } from './state';
 

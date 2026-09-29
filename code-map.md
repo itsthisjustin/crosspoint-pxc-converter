@@ -11,8 +11,7 @@
 A browser-only converter from arbitrary images / Game Boy Printer captures (`.2bpp`, `.bin`, `.gb`, `.txt`) to:
 
 - `.pxc` — XTeink e-paper raster format (4 levels of gray, packed 2bpp).
-- `.bmp` — 4-bit indexed grayscale BMP (BMP3, 4-entry palette).
-- `.bmp` — Game Boy palette BMP (when the source is a GB capture).
+- `.bmp` — 4-bit indexed native grayscale BMP (BMP3, 4-entry palette), shared by image and GB modes.
 
 No backend. No framework. Plain DOM + a hand-rolled flux-style store. The dither/tone pipeline runs in a Web Worker over a SharedArrayBuffer when cross-origin isolated, otherwise a transferable ArrayBuffer. Pica (Lanczos) is used for high-quality downscaling on the *output* path only. BMP is the sole public export; PXC encoders remain internal.
 
@@ -63,7 +62,7 @@ For each piece of logic, exactly one canonical home. **Adding a parallel impleme
 | Pica / Lanczos resampling | `infra/canvas/picaResize.ts:stepDownscaleAndResize`, called only from `features/image/service.ts:renderImageBaseRaster` and `features/image/controller.ts:autoLevels`. **Skipped on the 1:1 path** when `fittedWidth === srcW && fittedHeight === srcH` — source pixels go straight to target via `drawImage`, no resampling. **Never in the editor preview.** |
 | Tone mapping | `domain/tone.ts:buildToneLut` — single 256-entry LUT (commit `954638b`). Don't reintroduce per-pixel branching. |
 | Render of state → DOM | `ui/render.ts:renderStoreState` — pure function; subscribed once by the store in `app/bootstrap.ts`. |
-| Output encoding | `domain/formats/{pxc,bmpGray,bmpGb}.ts` |
+| Output encoding | `domain/formats/{pxc,bmpGray}.ts` — image and GB modes share `encodeGrayBmp`; GB preview palettes never enter export encoding |
 | GB tile decode | `domain/gb/decode2bpp.ts` |
 | GB Printer text parsing | `domain/gb/parsePrinterTxt.ts` |
 | GB pixel rotation | `domain/gb/rotatePixels.ts` |
@@ -79,7 +78,7 @@ For each piece of logic, exactly one canonical home. **Adding a parallel impleme
 | Auto-levels analysis | `domain/tone.ts:computeAutoLevels` over `buildLuminanceBuffer` + `buildUintHistogram` |
 | Worker process protocol | Types in `infra/worker/workerProtocol.ts`; worker `infra/worker/imageWorker.ts` ↔ host `infra/worker/imageWorkerClient.ts` |
 | GB display-scale math (default scale, zoom clamp) | `domain/gb/displayScale.ts:computeGbDisplayScale` (used by `features/gb/service.ts:buildGbSourceView` and `ui/render.ts`) |
-| Quantization profile per preset | `domain/quantize.ts:getQuantProfile(preset)` — `thresholds` = dither-off hard quantize (firmware quantizeSimple); `ditherThresholds`/`ditherLevels` = error-diffusion calibration. PR1614 is the default and uses 42/127/212 with native 0/85/170/255 levels; master remains the alternate X4-tuned Atkinson/FS branch (30/50/140 perceived as 15/30/80/210). Histogram zones/markers use `getActiveQuantThresholds(preset, ditherEnabled)` — the dither triple when dithering is enabled, the hard triple when not. Never hardcode any of these. |
+| Quantization profile per preset | `domain/quantize.ts:getQuantProfile(preset)` — `thresholds` = dither-off hard quantize; `ditherThresholds`/`ditherLevels` = error-diffusion calibration. PR1614 is the default and uses 43/128/213 with native 0/85/170/255 levels; master is the alternate CrossPoint 1.6.5 legacy Atkinson/FS calibration (30/55/150 with reconstruction levels 15/35/90/210; dither-off thresholds 45/70/140). Histogram zones/markers use `getActiveQuantThresholds(preset, ditherEnabled)` — the dither triple when dithering is enabled, the hard triple when not. Never hardcode any of these. |
 | Rotated source dims + max fit-size percent under no-upscale | `domain/geometry.ts:rotatedSourceDims` (used by `ui/imageCropBridge.ts` and `domain/gb/displayScale.ts`) + `computeMaxFitSizePct` (called only by `features/image/controller.ts:syncFitSizeMaxPct`, which writes the result into `state.image.fitSizeMaxPct`; `ui/render.ts` and `ui/bindings.ts` read the state field) |
 
 ---
@@ -169,8 +168,8 @@ The convert pipeline is rAF-debounced (`requestConvert` cancels the in-flight rA
 | `src/domain/quantize.ts` | domain | 4-level quantization against explicit per-preset profiles (`pr1614` default vs `master`); pure — the active preset lives in `state.quantPreset` | `quantize`, `getQuantThresholds`, `getActiveQuantThresholds`, `getQuantProfile`, `GRAY_DISP`, `QuantPreset`, `QuantThresholds`, `QuantProfile`, `QuantLevels`, `DEFAULT_QUANT_PRESET`, `QUANT_PRESET_LABELS` |
 | `src/domain/devices.ts` | domain | XTeink device specs | `DEVICES`, `DEFAULT_XT`, `DeviceKey` |
 | `src/domain/formats/pxc.ts` | domain | `.pxc` encoder | `encodePxc` |
-| `src/domain/formats/bmpGray.ts` | domain | 8-bit grayscale BMP encoder | `encodeGrayBmp` |
-| `src/domain/formats/bmpGb.ts` | domain | GB-palette BMP encoder | `encodeGbBmp`, `GbPaletteKey` |
+| `src/domain/formats/bmpGray.ts` | domain | Shared 4-bit indexed native grayscale BMP encoder | `encodeGrayBmp` |
+| `src/domain/gb/palettes.ts` | domain | Source-preview colors only; never used for BMP encoding | `GB_PALETTES`, `GbPaletteKey` |
 | `src/domain/gb/decode2bpp.ts` | domain | 2bpp tile → flat pixel array | `decode2bpp` |
 | `src/domain/gb/parsePrinterTxt.ts` | domain | Parse GB Printer text logs | `parsePrinterTxt` |
 | `src/domain/gb/rotatePixels.ts` | domain | Rotate flat pixel buffer | `rotatePixels` |
@@ -384,7 +383,7 @@ Before writing X, use Y:
 | Draw a histogram | `renderHistogram` | `infra/canvas/histogramRenderer.ts` |
 | Paint indexed-pixel preview | `renderIndexedPreview` | `infra/canvas/previewRenderer.ts` |
 | Paint GB source canvas | `renderGbSourceCanvas` | `infra/canvas/gbSourceRenderer.ts` |
-| Encode output bytes | `domain/formats/{pxc,bmpGray,bmpGb}.ts` |
+| Encode output bytes | `domain/formats/{pxc,bmpGray}.ts` |
 | Decode 2bpp tiles | `decode2bpp` | `domain/gb/decode2bpp.ts` |
 | Parse GB Printer .txt log | `parsePrinterTxt` | `domain/gb/parsePrinterTxt.ts` |
 | Rotate flat GB pixel buffer | `rotatePixels` | `domain/gb/rotatePixels.ts` |

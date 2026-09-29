@@ -11,13 +11,11 @@ export const QUANT_PRESET_LABELS: Record<QuantPreset, string> = {
   master: 'crosspoint master',
 };
 
-// Per-preset quantization profile.
-// - `thresholds`: hard quantize with dither off — mirrors firmware BitmapHelpers.cpp:quantizeSimple.
-// - `ditherThresholds`/`ditherLevels`: error-diffusion bin selection and reconstruction values.
-//   For `master` these mirror the firmware's Atkinson/Floyd-Steinberg "fine-tuned to X4 eink
-//   display" branch (BitmapHelpers.h): the panel's four states perceive as ≈15/30/80/210, far
-//   darker than the nominal 0/85/170/255 — diffusing error against the real values is what
-//   brightens the pattern so it reads correctly on the physical panel.
+// Browser-side shade selection; BMP exports always store the native GRAY_DISP palette.
+// PR1614 uses uniform midpoint thresholds. The alternate `master` key is retained for
+// saved preferences and matches CrossPoint 1.6.5's legacy quantizer calibration:
+// BitmapHelpers.cpp:quantizeSimple and BitmapHelpers.h:AtkinsonDitherer/FloydSteinbergDitherer.
+// Source: https://github.com/crosspoint-reader/crosspoint-reader/tree/1.6.5/lib/GfxRenderer
 export type QuantLevels = readonly [number, number, number, number];
 
 export type QuantProfile = {
@@ -27,8 +25,8 @@ export type QuantProfile = {
 };
 
 const PROFILES: Record<QuantPreset, QuantProfile> = {
-  pr1614: { thresholds: [42, 127, 212], ditherThresholds: [42, 127, 212], ditherLevels: GRAY_DISP },
-  master: { thresholds: [45, 70, 140], ditherThresholds: [30, 50, 140], ditherLevels: [15, 30, 80, 210] },
+  pr1614: { thresholds: [43, 128, 213], ditherThresholds: [43, 128, 213], ditherLevels: GRAY_DISP },
+  master: { thresholds: [45, 70, 140], ditherThresholds: [30, 55, 150], ditherLevels: [15, 35, 90, 210] },
 };
 
 export function getQuantProfile(p: QuantPreset): QuantProfile {
