@@ -3,19 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CrossPoint Converter — image &amp; Game Boy → sleep screen</title>
+  <meta name="theme-color" content="#4a7a62">
+  <meta name="description" content="Create CrossPoint wallpapers from images and Game Boy captures. Everything runs locally in your browser.">
+  <title>Crosspoint Wallpaper Creator — CrossPoint Reader</title>
+  <link rel="icon" href="/crosspoint-logo.png">
+  <link rel="preconnect" href="https://rsms.me">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<header>
-  <h1>CrossPoint Sleep Screen Converter</h1>
-  <a class="gh-link" href="https://github.com/zgredex/crosspoint-pxc-converter" target="_blank" rel="noopener">GitHub ↗</a>
+<header class="site-header">
+  <nav class="site-nav" aria-label="Primary navigation">
+    <a class="site-brand" href="https://crosspointreader.com/" aria-label="CrossPoint Reader homepage">
+      <img src="/crosspoint-logo.png" alt="" width="28" height="28">
+      <span>CrossPoint <strong>Reader</strong></span>
+    </a>
+    <div class="site-nav-links">
+      <a href="https://crosspointreader.com/fonts">Font Builder</a>
+      <a href="https://crosspointreader.com/docs">Docs</a>
+      <a href="https://crosspointreader.com/devices">Devices</a>
+      <a href="https://github.com/zgredex/crosspoint-pxc-converter" target="_blank" rel="noopener">GitHub</a>
+      <a class="fund-link" href="https://app.royalty.dev/crosspoint-reader/crosspoint-reader" target="_blank" rel="noopener">Fund CrossPoint</a>
+    </div>
+  </nav>
 </header>
 
-<div class="status-banner" id="statusBanner" hidden aria-live="polite"></div>
+<main class="tool-page">
+  <section class="tool-intro" aria-labelledby="toolTitle">
+    <div>
+      <p class="eyebrow">CrossPoint tools</p>
+      <h1 id="toolTitle">Crosspoint Wallpaper Creator</h1>
+      <p class="tool-description">Turn an image or Game Boy capture into a four-shade wallpaper, preview it exactly as it will appear, then save a native-palette BMP for your CrossPoint reader.</p>
+    </div>
+    <div class="local-processing-note">
+      <span class="local-processing-icon" aria-hidden="true">✓</span>
+      <span><strong>Private by design</strong>Everything stays in your browser.</span>
+    </div>
+  </section>
+
+  <div class="status-banner" id="statusBanner" hidden aria-live="polite"></div>
 
 <div class="app">
 
@@ -283,19 +312,20 @@
     </div>
 
     <div class="download-group" id="downloadGroup">
-      <button class="download-btn" id="downloadPxc">Download .pxc</button>
-      <button class="download-btn" id="downloadBmp">Download .bmp</button>
+      <button class="download-btn" id="downloadPxc" hidden aria-hidden="true" tabindex="-1">Download .pxc</button>
+      <button class="download-btn" id="downloadBmp">Download native-palette BMP</button>
     </div>
 
   </div>
 
 </div>
 
-<footer>
-  Place on SD card as <code>/sleep.pxc</code> | <code>/sleep.bmp</code> or inside <code>/.sleep/</code>
-  <p class="local-only-note">No upload, no server — all processing happens locally in your browser.</p>
-  <p class="author-credit">By <a href="https://github.com/zgredex" target="_blank" rel="noopener">zgredex</a> · Discord <code>Megabit_Omega</code></p>
-</footer>
+  <footer>
+    <p>Place the finished BMP at <code>/sleep.bmp</code> or inside <code>/.sleep/</code> on the SD card.</p>
+    <p class="local-only-note">No upload, no server — all processing happens locally in your browser.</p>
+    <p class="author-credit">Built by <a href="https://github.com/zgredex" target="_blank" rel="noopener">zgredex</a> for the CrossPoint community · Discord <code>Megabit_Omega</code></p>
+  </footer>
+</main>
 
 <canvas id="workCanvas" width="480" height="800" style="display:none"></canvas>
 <div id="zoomBox">

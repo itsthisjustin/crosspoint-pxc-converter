@@ -4,11 +4,11 @@ export type QuantPreset = 'pr1614' | 'master';
 
 export type QuantThresholds = readonly [number, number, number];
 
-export const DEFAULT_QUANT_PRESET: QuantPreset = 'master';
+export const DEFAULT_QUANT_PRESET: QuantPreset = 'pr1614';
 
 export const QUANT_PRESET_LABELS: Record<QuantPreset, string> = {
-  pr1614: 'PR1614',
-  master: 'crosspoint master (default)',
+  pr1614: 'PR1614 (default)',
+  master: 'crosspoint master',
 };
 
 // Per-preset quantization profile.

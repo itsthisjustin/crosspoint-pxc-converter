@@ -28,7 +28,7 @@ describe('quantize', () => {
   it('exposes per-preset thresholds', () => {
     expect(getQuantThresholds('pr1614')).toEqual([42, 127, 212]);
     expect(getQuantThresholds('master')).toEqual([45, 70, 140]);
-    expect(DEFAULT_QUANT_PRESET).toBe('master');
+    expect(DEFAULT_QUANT_PRESET).toBe('pr1614');
   });
 
   it('getQuantProfile returns correct profiles', () => {

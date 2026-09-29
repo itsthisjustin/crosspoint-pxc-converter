@@ -1,8 +1,8 @@
-# CrossPoint PXC Converter
+# Crosspoint Wallpaper Creator
 
 **[crosspoint-pxc-converter.pages.dev](https://crosspoint-pxc-converter.pages.dev)**
 
-A browser-based converter that turns images and Game Boy 2BPP captures into sleep-screen wallpapers for the [CrossPoint](https://github.com/crosspoint-reader/crosspoint-reader) e-reader firmware running on XTeink devices. Inputs go in as PNG, JPG, WebP, BMP, GIF, `.2bpp`, `.bin`, `.gb`, or GB-Printer `.txt` logs; outputs come out as `.pxc` (CrossPoint native) or `.bmp` (4-bit indexed). Every step runs locally in the browser — no upload, no server.
+A browser-based creator that turns images and Game Boy 2BPP captures into sleep-screen wallpapers for the [CrossPoint](https://github.com/crosspoint-reader/crosspoint-reader) e-reader firmware running on XTeink devices. Inputs go in as PNG, JPG, WebP, BMP, GIF, `.2bpp`, `.bin`, `.gb`, or GB-Printer `.txt` logs. The current user-facing export is a native-palette `.bmp` (4-bit indexed); the PXC encoder remains internal. Every step runs locally in the browser — no upload, no server.
 
 ---
 
@@ -108,7 +108,7 @@ Controls run in this processing order: black/white-point map → gamma → contr
 
 ### Dithering
 
-Every error-diffusion algorithm uses BT.601 luminance in sRGB space and quantises against the X4 e-ink panel's calibrated response — bins `30 / 50 / 140` with perceived levels `[15, 30, 80, 210]` — matching the CrossPoint firmware's own image pipeline, so the dithered pattern reads at the source's brightness on the physical display.
+Every error-diffusion algorithm uses BT.601 luminance in sRGB space. The default PR1614 profile uses evenly spaced firmware thresholds `42 / 127 / 212` and the native display levels `[0, 85, 170, 255]`, matching the PR1614 image-rendering work. The previous CrossPoint master calibration remains available through the advanced preset toggle (`Ctrl`/`Cmd` + `Shift` + `Q`).
 
 | Algorithm | Notes |
 |-----------|-------|
@@ -130,7 +130,7 @@ A live tone-distribution panel renders alongside the preview:
 - 256-bin luminance histogram of the post-tone pre-dither buffer.
 - Four coloured zones corresponding to the four output levels, each labelled with the percentage of pixels that fall into it.
 - A solid palette colour strip below for unambiguous level identification.
-- Threshold markers drawn at 45, 70, and 140 — the boundaries between adjacent output levels.
+- Threshold markers follow the active quantization profile. The default PR1614 markers are 42, 127, and 212.
 
 ### Game Boy mode
 
@@ -162,8 +162,8 @@ The GB-Printer text-log parser reads hex byte lines and extracts the `PRNT` pale
 
 ### Export
 
-- **Download .pxc** — CrossPoint native format.
-- **Download .bmp** — 4-bit indexed BMP3 (greyscale palette in image mode, GB colour palette in GB mode).
+- **Download native-palette BMP** — 4-bit indexed BMP3 (greyscale palette in image mode, GB colour palette in GB mode). This is the only user-facing export for now.
+- The CrossPoint-native PXC encoder remains in the codebase but its download control is hidden.
 
 Filenames are tagged with the dither method (image mode) and target device, so multiple variants of the same source don't collide:
 
@@ -189,6 +189,8 @@ npm run test     # vitest run
 ```
 
 The build output in `dist/` is plain static files — HTML, JS chunks, CSS, and a worker bundle.
+
+The production build uses relative asset URLs, so `dist/` can be mounted directly under a CrossPoint Reader tools route (for example `/tools/wallpaper/`) without recompiling for that pathname. The page uses the same Inter/Lora typography, brand-green and stone palette, controls, cards, and site navigation treatment as [crosspointreader.com](https://crosspointreader.com/).
 
 ### Hosting requirements
 

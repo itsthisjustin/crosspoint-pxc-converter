@@ -27,7 +27,7 @@ function setActive(buttons: HTMLButtonElement[], predicate: (button: HTMLButtonE
 
 export function renderStoreState(dom: AppDom, state: AppState): void {
   const isGbLoaded = state.loadedType === 'gb';
-  const outputVisible = state.output.pxcReady && state.output.bmpReady;
+  const outputVisible = state.output.bmpReady;
   const fileInfo = isGbLoaded ? state.gb.fileInfo : null;
 
   dom.statusBanner.hidden = state.ui.message === null;
