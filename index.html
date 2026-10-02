@@ -4,38 +4,335 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#4a7a62">
-  <meta name="description" content="Crosspoint Wallpaper Creator is being transferred to the CrossPoint organization.">
-  <title>Crosspoint Wallpaper Creator — Project update</title>
+  <meta name="description" content="Create CrossPoint wallpapers from images and Game Boy captures. Everything runs locally in your browser.">
+  <title>Crosspoint Wallpaper Creator — CrossPoint Reader</title>
   <link rel="icon" href="/crosspoint-logo.png">
   <link rel="preconnect" href="https://rsms.me">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&display=swap" rel="stylesheet">
-  <link href="/src/styles/transfer.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-  <header class="site-header">
-    <nav class="site-nav" aria-label="Primary navigation">
-      <a class="site-brand" href="https://crosspointreader.com/" aria-label="CrossPoint Reader homepage">
-        <img src="/crosspoint-logo.png" alt="" width="28" height="28">
-        <span>CrossPoint <strong>Reader</strong></span>
-      </a>
-      <a class="site-link" href="https://crosspointreader.com/">CrossPoint Reader</a>
-    </nav>
-  </header>
 
-  <main class="transfer-page">
-    <section class="transfer-card" aria-labelledby="transferTitle">
+<header class="site-header">
+  <nav class="site-nav" aria-label="Primary navigation">
+    <a class="site-brand" href="https://crosspointreader.com/" aria-label="CrossPoint Reader homepage">
+      <img src="/crosspoint-logo.png" alt="" width="28" height="28">
+      <span>CrossPoint <strong>Reader</strong></span>
+    </a>
+    <div class="site-nav-links">
+      <a href="https://crosspointreader.com/fonts">Font Builder</a>
+      <a href="https://crosspointreader.com/docs">Docs</a>
+      <a href="https://crosspointreader.com/devices">Devices</a>
+      <a href="https://github.com/zgredex/crosspoint-pxc-converter" target="_blank" rel="noopener">GitHub</a>
+      <a class="fund-link" href="https://app.royalty.dev/crosspoint-reader/crosspoint-reader" target="_blank" rel="noopener">Fund CrossPoint</a>
+    </div>
+  </nav>
+</header>
+
+<main class="tool-page">
+  <section class="tool-intro" aria-labelledby="toolTitle">
+    <div>
       <p class="eyebrow">CrossPoint tools</p>
-      <h1 id="transferTitle">The converter is moving.</h1>
-      <p class="transfer-summary">Crosspoint Wallpaper Creator is being transferred to the <a href="https://github.com/crosspoint-reader" target="_blank" rel="noopener">CrossPoint organization</a>. The converter is unavailable during the transition.</p>
-      <p class="thanks">Thank you to everyone who used the website, shared feedback, and helped make it better.</p>
-      <div class="transfer-links">
-        <a class="primary-link" href="https://github.com/crosspoint-reader" target="_blank" rel="noopener">Visit CrossPoint on GitHub</a>
-        <a class="secondary-link" href="https://crosspointreader.com/">CrossPoint Reader</a>
+      <h1 id="toolTitle">Crosspoint Wallpaper Creator</h1>
+      <p class="tool-description">Turn an image or Game Boy capture into a four-shade wallpaper, preview it exactly as it will appear, then save a native-palette BMP for your CrossPoint reader.</p>
+    </div>
+    <div class="local-processing-note">
+      <span class="local-processing-icon" aria-hidden="true">✓</span>
+      <span><strong>Private by design</strong>Everything stays in your browser.</span>
+    </div>
+  </section>
+
+  <div class="status-banner" id="statusBanner" hidden aria-live="polite"></div>
+
+<div class="app">
+
+  <div class="left">
+
+    <label class="drop-zone" id="dropZone" for="fileInput">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12M12 16.5V3"/>
+      </svg>
+      Drop image or GB file here, click to browse, or paste image / GB Printer text
+      <small>PNG, JPG, WebP, BMP, GIF — or .2bpp / .bin / .gb / .txt</small>
+      <input type="file" id="fileInput" accept="image/*,.2bpp,.bin,.gb,.txt">
+    </label>
+
+    <div class="editor-section" id="editorSection">
+      <div class="source-header">
+        <p class="section-label" id="sourceLabel">Source</p>
+        <button class="change-btn" id="changeBtn">Clear</button>
       </div>
-    </section>
-  </main>
+      <p class="source-sub-label" id="sourceSubLabel"></p>
+      <div class="zoom-controls" id="zoomControls">
+        <label for="zoomSlider" class="zoom-controls-label">Zoom</label>
+        <input id="zoomSlider" class="zoom-slider" type="range" min="1" max="1" step="0.01" value="1" aria-label="Editor zoom">
+      </div>
+      <p class="zoom-hint" id="zoomHint" hidden></p>
+      <div class="source-frame" id="sourceFrame">
+        <canvas id="sourceCanvas"></canvas>
+        <div id="cropBox">
+          <div class="crop-handle crop-handle--n" data-handle="n"></div>
+          <div class="crop-handle crop-handle--s" data-handle="s"></div>
+          <div class="crop-handle crop-handle--e" data-handle="e"></div>
+          <div class="crop-handle crop-handle--w" data-handle="w"></div>
+          <div class="crop-handle crop-handle--ne" data-handle="ne"></div>
+          <div class="crop-handle crop-handle--nw" data-handle="nw"></div>
+          <div class="crop-handle crop-handle--se" data-handle="se"></div>
+          <div class="crop-handle crop-handle--sw" data-handle="sw"></div>
+        </div>
+        <div id="snapGuideH" class="snap-guide"></div>
+        <div id="snapGuideV" class="snap-guide"></div>
+      </div>
+      <div class="source-wrap" id="gbSourceWrap">
+        <canvas id="gbCanvas"></canvas>
+      </div>
+    </div>
+
+    <div class="file-info" id="gbFileInfo">
+      <div class="info-row">
+        <span>File</span><span class="info-val" id="gbInfoName">—</span>
+      </div>
+      <div class="info-row">
+        <span>Size</span><span class="info-val" id="gbInfoSize">—</span>
+      </div>
+      <div class="info-row">
+        <span>Tiles</span><span class="info-val" id="gbInfoTiles">—</span>
+      </div>
+      <div class="info-row">
+        <span>Image</span><span class="info-val" id="gbInfoDims">—</span>
+      </div>
+      <div class="info-row" id="gbWarnRow">
+        <span class="warn" id="gbWarnMsg"></span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="side-panel">
+    <div class="settings-cols">
+
+      <div class="settings-col">
+
+        <div class="panel-section">
+          <p class="panel-heading">XTeink<button class="help-tip" type="button" data-tip="Pick your CrossPoint device. X3 outputs 528×792 pixels, X4 outputs 480×800." aria-label="About XTeink device">?</button></p>
+          <div class="pill-group">
+            <button class="pill" id="x3Btn" data-xt="x3">X3</button>
+            <button class="pill active" id="x4Btn" data-xt="x4">X4</button>
+          </div>
+        </div>
+
+        <div class="panel-section" id="scaleSection">
+          <p class="panel-heading">Scale<button class="help-tip" type="button" data-tip="Crop fills the device with the selected region. Fit scales the region preserving aspect ratio with letterbox. 1:1 places the region at native pixel resolution (no resampling) — the box is capped to device dims." aria-label="About scale mode">?</button></p>
+          <div class="pill-group">
+            <button class="pill active" id="cropBtn" data-mode="crop" title="Fill the device with the cropped region (resampled)">Crop</button>
+            <button class="pill" id="fitBtn" data-mode="fit" title="AR-preserving fit with letterbox; size slider lets you place the region smaller than the device">Fit</button>
+            <button class="pill" id="oneToOneBtn" data-mode="one-to-one" title="Native size — pixel-perfect placement, no resampling">1:1</button>
+          </div>
+          <div class="tone-row" id="fitSizeRow" style="display: none; margin-top: 10px;">
+            <span class="tone-label">Size<button class="help-tip" type="button" data-tip="Scale the cropped region between native size (10%) and full Fit (100%). Lower values produce a smaller image with more letterbox around it." aria-label="About fit size">?</button></span>
+            <input type="range" id="fitSizeSlider" class="tone-slider" min="10" max="100" value="100" step="1" aria-label="Image size">
+            <span class="tone-val" id="fitSizeVal">100%</span>
+          </div>
+          <div class="toggle-row" id="fitNoUpscaleRow" style="display: none;">
+            <span class="toggle-label">No upscale<button class="help-tip" type="button" data-tip="When on, Fit caps the scaling at 1× — small sources stay at native pixel size rather than being resampled bigger. Turn off to allow upscaling small sources to fill the device." aria-label="About no-upscale guard">?</button></span>
+            <label class="toggle">
+              <input type="checkbox" id="fitNoUpscaleToggle" checked aria-label="Prevent image upscaling">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="panel-section disabled" id="posSection">
+          <p class="panel-heading">Position on screen<button class="help-tip" type="button" data-tip="Where to place the image on the device when Fit leaves empty space around it." aria-label="About position">?</button></p>
+          <div class="pos-grid">
+            <button class="pos-btn" data-pos="tl" title="Top left"></button>
+            <button class="pos-btn" data-pos="tc" title="Top centre"></button>
+            <button class="pos-btn" data-pos="tr" title="Top right"></button>
+            <button class="pos-btn" data-pos="ml" title="Middle left"></button>
+            <button class="pos-btn active" data-pos="mc" title="Centre"></button>
+            <button class="pos-btn" data-pos="mr" title="Middle right"></button>
+            <button class="pos-btn" data-pos="bl" title="Bottom left"></button>
+            <button class="pos-btn" data-pos="bc" title="Bottom centre"></button>
+            <button class="pos-btn" data-pos="br" title="Bottom right"></button>
+          </div>
+          <p class="panel-heading" style="margin-top: 10px;">Background<button class="help-tip" type="button" data-tip="Color used to fill the empty space around a Fit image." aria-label="About fit background color">?</button></p>
+          <div class="pill-group">
+            <button class="pill active" data-bg="white">White</button>
+            <button class="pill" data-bg="black">Black</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <p class="panel-heading">Rotation<button class="help-tip" type="button" data-tip="Rotate the source 90° at a time before cropping or fitting." aria-label="About rotation">?</button></p>
+          <div class="rotate-group">
+            <button class="rotate-btn" id="rotateCCW" title="Rotate 90° counter-clockwise">↺</button>
+            <span class="rotate-val" id="rotateVal">0°</span>
+            <button class="rotate-btn" id="rotateCW" title="Rotate 90° clockwise">↻</button>
+          </div>
+        </div>
+
+        <div class="panel-section" id="mirrorSection">
+          <p class="panel-heading">Mirror<button class="help-tip" type="button" data-tip="Flip the view left-to-right (H) or top-to-bottom (V)." aria-label="About mirror">?</button></p>
+          <div class="mirror-group">
+            <button class="mirror-btn" id="mirrorHBtn" title="Flip horizontal">⇆ H</button>
+            <button class="mirror-btn" id="mirrorVBtn" title="Flip vertical">⇅ V</button>
+          </div>
+        </div>
+
+        <div id="gbControls">
+
+          <div class="panel-section">
+            <p class="panel-heading">Source preview palette<button class="help-tip" type="button" data-tip="Changes only the Game Boy source preview colors. The output preview and every BMP download always use CrossPoint's four native grayscale shades, regardless of this selection." aria-label="About GB source preview palette">?</button></p>
+            <div class="pill-group pill-group--wrap">
+              <button class="pill active" data-gbpalette="dmg">DMG</button>
+              <button class="pill" data-gbpalette="pocket">Pocket</button>
+              <button class="pill" data-gbpalette="bw">B&amp;W</button>
+              <button class="pill" data-gbpalette="sgb">SGB</button>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <p class="panel-heading">Output scale<button class="help-tip" type="button" data-tip="Multiplier for the exported BMP size — 1× saves at the native pixel count, higher values produce a larger file with the same content." aria-label="About GB output scale">?</button></p>
+            <div class="rotate-group">
+              <button class="rotate-btn" id="gbScaleDownBtn">−</button>
+              <span class="rotate-val" id="gbScaleVal">1×</span>
+              <button class="rotate-btn" id="gbScaleUpBtn">+</button>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <p class="panel-heading">Background<button class="help-tip" type="button" data-tip="Color used behind the Game Boy frame in the exported BMP." aria-label="About GB background color">?</button></p>
+            <div class="pill-group">
+              <button class="pill active" data-bg="white">White</button>
+              <button class="pill" data-bg="black">Black</button>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <div class="toggle-row">
+              <span class="toggle-label">Invert<button class="help-tip" type="button" data-tip="Flip colors." aria-label="About GB invert">?</button></span>
+              <label class="toggle">
+                <input type="checkbox" id="gbInvertToggle" aria-label="Invert Game Boy colors">
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="panel-section" id="paletteInfo">
+            <p class="panel-heading" style="font-size:0.6rem; margin-bottom:4px;">
+              GB Printer palette: <span id="paletteInfoVal">—</span><button class="help-tip" type="button" data-tip="Shows the grayscale levels the GB Printer text log encoded — read-only." aria-label="About GB Printer palette readout">?</button>
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="settings-col">
+
+        <div class="panel-section" id="histogramSection">
+          <p class="panel-heading">Histogram<button class="help-tip" type="button" data-tip="Brightness distribution of the area you'll export — left is dark, right is bright. Useful for picking black/white points." aria-label="About histogram">?</button></p>
+          <canvas id="histogramCanvas"></canvas>
+        </div>
+
+        <div class="panel-section" id="toneRangeSection">
+          <p class="panel-heading">Tone Range<button class="help-tip" type="button" data-tip="Maps source brightness onto the device's 4 grey levels. Adjust black, white, and gamma to control how the picture is exposed." aria-label="About tone range">?</button></p>
+          <div class="tone-row">
+            <span class="tone-label">Black<button class="help-tip" type="button" data-tip="Pixels at or below this brightness become pure black on the device." aria-label="About black point">?</button></span>
+            <input type="range" id="blackSlider" class="tone-slider" min="0" max="255" value="0" step="1" aria-label="Black point">
+            <span class="tone-val" id="blackVal">0</span>
+          </div>
+          <div class="tone-row">
+            <span class="tone-label">White<button class="help-tip" type="button" data-tip="Pixels at or above this brightness become pure white on the device." aria-label="About white point">?</button></span>
+            <input type="range" id="whiteSlider" class="tone-slider" min="0" max="255" value="255" step="1" aria-label="White point">
+            <span class="tone-val" id="whiteVal">255</span>
+          </div>
+          <div class="tone-row">
+            <span class="tone-label">Gamma<button class="help-tip" type="button" data-tip="Lifts or darkens midtones without clipping pure black or pure white. Below 1 darkens, above 1 brightens." aria-label="About gamma">?</button></span>
+            <input type="range" id="gammaSlider" class="tone-slider" min="30" max="500" value="100" step="1" aria-label="Gamma">
+            <span class="tone-val" id="gammaVal">1.00</span>
+          </div>
+          <div class="tone-btns">
+            <button class="tone-btn" id="autoLevelsBtn">Auto</button>
+            <button class="tone-btn" id="toneReset">Reset all</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <p class="panel-heading">Contrast<button class="help-tip" type="button" data-tip="Pull dark and light pixels apart (positive) or push them together (negative)." aria-label="About contrast">?</button></p>
+          <div class="contrast-row">
+            <input type="range" id="contrastSlider" class="contrast-slider" min="-100" max="100" value="0" step="1" aria-label="Contrast">
+            <span class="contrast-val" id="contrastVal">0</span>
+          </div>
+          <button class="contrast-reset" id="contrastReset">Reset</button>
+        </div>
+
+        <div class="panel-section">
+          <div class="toggle-row">
+            <span class="toggle-label">Invert<button class="help-tip" type="button" data-tip="Flip colors." aria-label="About invert">?</button></span>
+            <label class="toggle">
+              <input type="checkbox" id="invertToggle" aria-label="Invert image colors">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="toggle-row" style="margin-bottom: 10px;">
+            <span class="toggle-label">Dither<button class="help-tip" type="button" data-tip="Simulates extra grey levels by mixing the device's 4 shades with patterned noise. Each algorithm has a different look — try a few to see which fits your image." aria-label="About dither">?</button></span>
+            <label class="toggle">
+              <input type="checkbox" id="ditherToggle" checked aria-label="Dithering">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div id="ditherAlgos" class="pill-group pill-group--wrap">
+            <button class="pill active" data-dither="zhou-fang">Zhou-Fang</button>
+            <button class="pill" data-dither="atk">Atkinson</button>
+            <button class="pill" data-dither="blue-noise">Blue Noise</button>
+            <button class="pill" data-dither="bayer">Bayer</button>
+            <button class="pill" data-dither="fs">Floyd-S</button>
+            <button class="pill" data-dither="jjn">Jarvis</button>
+            <button class="pill" data-dither="stucki">Stucki</button>
+            <button class="pill" data-dither="burkes">Burkes</button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="side-panel">
+
+    <div class="panel-section" style="padding-bottom: 12px;">
+      <p class="panel-heading">Preview</p>
+      <canvas id="previewCanvas" width="480" height="800"></canvas>
+    </div>
+
+    <div class="download-group" id="downloadGroup">
+      <button class="download-btn" id="downloadBmp">Download native-palette BMP</button>
+    </div>
+
+  </div>
+
+</div>
+
+  <footer>
+    <p>Place the finished BMP at <code>/sleep.bmp</code> or inside <code>/.sleep/</code> on the SD card.</p>
+    <p class="local-only-note">No upload, no server — all processing happens locally in your browser.</p>
+    <p class="author-credit">Built by <a href="https://github.com/zgredex" target="_blank" rel="noopener">zgredex</a> for the CrossPoint community · Discord <code>Megabit_Omega</code></p>
+  </footer>
+</main>
+
+<canvas id="workCanvas" width="480" height="800" style="display:none"></canvas>
+<div id="zoomBox">
+  <canvas id="zoomCanvas" width="260" height="260"></canvas>
+  <span id="zoomLabel">3.6× zoom</span>
+</div>
+<div id="quantPresetBadge" class="quant-badge" hidden></div>
+
+<script type="module" src="/src/main.ts"></script>
 </body>
 </html>
